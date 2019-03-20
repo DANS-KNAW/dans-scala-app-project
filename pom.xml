@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>dans-scala-app-project</artifactId>
-    <version>3.1.0</version>
+    <version>3.1.1-SNAPSHOT</version>
     <name>DANS Scala Application Project</name>
     <packaging>pom</packaging>
     <repositories>
