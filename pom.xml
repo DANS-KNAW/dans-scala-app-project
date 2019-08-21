@@ -118,7 +118,7 @@
                 </snapshotRepository>
                 <repository>
                     <id>nexus-releases</id>
-                    <url>http://dnexus.dans.knaw.nl/repository/rpm-releases/</url>
+                    <url>http://dnexus.dans.knaw.nl/repository/prod/</url>
                 </repository>
             </distributionManagement>
         </profile>
