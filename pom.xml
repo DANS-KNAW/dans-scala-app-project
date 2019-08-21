@@ -34,6 +34,16 @@
         <developerConnection>scm:git:https://github.com/DANS-KNAW/${project.artifactId}</developerConnection>
         <tag>HEAD</tag>
     </scm>
+    <distributionManagement>
+        <snapshotRepository>
+            <id>nexus-snapshots</id>
+            <url>http://dnexus.dans.knaw.nl/repository/test/</url>
+        </snapshotRepository>
+        <repository>
+            <id>nexus-releases</id>
+            <url>http://dnexus.dans.knaw.nl/repository/prod/</url>
+        </repository>
+    </distributionManagement>
     <repositories>
         <repository>
             <id>DANS</id>
