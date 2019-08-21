@@ -35,6 +35,19 @@
         <developerConnection>scm:git:https://github.com/DANS-KNAW/${project.artifactId}</developerConnection>
         <tag>HEAD</tag>
     </scm>
+    <distributionManagement>
+        <!--
+        Overriding distributionManagement because the RPMs are stored in different repositories than Maven artifacts.
+        -->
+        <snapshotRepository>
+            <id>nexus-snapshots</id>
+            <url>http://maven-repo.dans.knaw.nl/repository/rpm-snapshots/</url>
+        </snapshotRepository>
+        <repository>
+            <id>nexus-releases</id>
+            <url>http://maven-repo.dans.knaw.nl/repository/rpm-releases/</url>
+        </repository>
+    </distributionManagement>
     <repositories>
         <repository>
             <id>DANS</id>
@@ -57,9 +70,6 @@
         </resources>
         <plugins>
             <plugin>
-                <artifactId>maven-release-plugin</artifactId>
-            </plugin>
-            <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
             </plugin>
             <plugin>
@@ -81,6 +91,25 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
             </plugin>
+            <plugin>
+                <!-- Projects that inherit from dans-scala-app are applications that are packaged as RPM's.
+                    The default deploy implementation does not do here. It is replaced by
+                    two exec-maven-plugin definitions below: one for snapshots and one for releases -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>${maven-deploy-plugin.version}</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>${maven-release-plugin.version}</version>
+                <configuration combine.self="append">
+                    <releaseProfiles>releases</releaseProfiles>
+                </configuration>
+            </plugin>
         </plugins>
         <pluginManagement>
             <plugins>
@@ -97,6 +126,15 @@
                     </executions>
                 </plugin>
                 <plugin>
+                    <!--
+                    This will call a python script included in dans-mvn-build-resources. The python script will
+                    deploy the RPM using the Nexus REST API for Yum repositories. It will also double check
+                    that that RPM is a snapshot.
+
+                    NOTE: The Nexus Credentials must available in the environment variables NEXUS_USER and NEXUS_PASSWORD!!
+                    (I could find no easy way to read the credentials from ~/.m2/settings.xml, where they are also provided,
+                    for the maven-deploy-plugin)
+                    -->
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
                     <version>1.6.0</version>
@@ -110,11 +148,12 @@
                                 <executable>python</executable>
                                 <workingDirectory>${project.basedir}</workingDirectory>
                                 <arguments>
-                                    <argument>${project.build.directory}/dans-build-resources/script/deploy-snapshot-rpm.py</argument>
+                                    <argument>${project.build.directory}/dans-build-resources/script/deploy-rpm.py</argument>
                                     <argument>${env.NEXUS_USER}</argument>
                                     <argument>${env.NEXUS_PASSWORD}</argument>
                                     <argument>${project.distributionManagement.snapshotRepository.url}</argument>
                                     <argument>${project.build.directory}</argument>
+                                    <argument>true</argument><!-- snapshot -->
                                 </arguments>
                             </configuration>
                         </execution>
@@ -125,8 +164,46 @@
     </build>
     <profiles>
         <profile>
+            <id>releases</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <!--
+                        A version of the above config for release RPMs.
+                        -->
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.6.0</version>
+                        <executions>
+                            <execution>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>python</executable>
+                                    <workingDirectory>${project.basedir}</workingDirectory>
+                                    <arguments>
+                                        <argument>${project.build.directory}/dans-build-resources/script/deploy-rpm.py</argument>
+                                        <argument>${env.NEXUS_USER}</argument>
+                                        <argument>${env.NEXUS_PASSWORD}</argument>
+                                        <argument>${project.distributionManagement.repository.url}</argument>
+                                        <argument>${project.build.directory}</argument>
+                                        <argument>false</argument><!-- release -->
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>local-deploy-test</id>
             <distributionManagement>
+                <!--
+                Overriding distributionManagement because the RPMs are stored in different repositories than Maven artifacts.
+                -->
                 <snapshotRepository>
                     <id>nexus-snapshots</id>
                     <url>http://dnexus.dans.knaw.nl/repository/rpm-snapshots/</url>
